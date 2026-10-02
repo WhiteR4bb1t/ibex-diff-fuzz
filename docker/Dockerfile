@@ -26,3 +26,4 @@ RUN git init /tmp/ibex && cd /tmp/ibex \
  && git fetch --depth 1 https://github.com/lowRISC/ibex $IBEX_COMMIT \
  && git checkout FETCH_HEAD \
  && pip3 install -r python-requirements.txt && rm -rf /tmp/ibex
+RUN apt-get update && apt-get install -y liblz4-dev
