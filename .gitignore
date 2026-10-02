@@ -1,1 +1,4 @@
 build/
+run/
+
+.fenv_history
