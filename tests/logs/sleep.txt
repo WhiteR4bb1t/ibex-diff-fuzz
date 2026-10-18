@@ -1,0 +1,21 @@
+Simulation of Ibex
+==================
+
+Tracing can be toggled by sending SIGUSR1 to this process:
+$ kill -USR1 65
+
+Simulation running, end by pressing CTRL-c.
+TOP.ibex_simple_system.u_top.u_ibex_tracer.unnamedblk2.unnamedblk3: Writing execution trace to trace_core_00000000.log
+Simulation timeout of 500 cycles reached, shutting down simulation.
+
+Simulation statistics
+=====================
+Executed cycles:  500
+Wallclock time:   0.002 s
+Simulation speed: 250000 cycles/s (250 kHz)
+Co-simulation matched 33 instructions
+
+Performance Counters
+====================
+Cycles:               39
+Instructions Retired: 33

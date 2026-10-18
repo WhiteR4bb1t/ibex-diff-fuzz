@@ -1,0 +1,19 @@
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <string>
+
+enum class Verdict { Match, Mismatch, Timeout, Unknown, Loop, Hang, Sleep, ElfError };
+
+struct RunResult {
+    Verdict verdict = Verdict::Unknown;
+    std::optional<uint64_t> cycles;
+    std::optional<uint64_t> retired;
+    std::optional<uint64_t> exec_cycles;
+};
+
+RunResult classify(const std::string& log);
+RunResult timeout_classify(const RunResult& a, const RunResult& b);
+void print_result(std::ostream& os, const RunResult& result);
+std::string verdict_to_string(Verdict v);

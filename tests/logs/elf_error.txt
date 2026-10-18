@@ -1,0 +1,1 @@
+ERROR: Failed to load ELF file at `tests/elf/non.elf': could not open file.
