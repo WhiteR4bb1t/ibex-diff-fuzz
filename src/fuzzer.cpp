@@ -1,5 +1,7 @@
 #include <iostream>
 #include <sstream>
+#include <cassert>
+#include <stdexcept>
 
 #include "fuzzer.h"
 
@@ -67,5 +69,33 @@ RunResult classify(const std::string& log) {
 }
 
 RunResult timeout_classify(const RunResult &a, const RunResult &b) {
+    assert(a.verdict == Verdict::Timeout && "No timeout in Result a");
+    RunResult result = b;
+    if (b.verdict != Verdict::Timeout) {
+        if (b.verdict == Verdict::Unknown || b.verdict == Verdict::ElfError)
+            throw std::runtime_error("Error in timeout classification. B has verdict " + verdict_to_string(b.verdict));
+        result.bad_timeout = true;
+
+        return result;
+    }
+
+    if(!b.exec_cycles || !b.cycles || !b.retired || !a.retired || !a.cycles || !a.exec_cycles)
+        throw std::runtime_error("Error in timeout classification. Statistics are missing");
+
+    if(b.exec_cycles < b.cycles)
+        throw std::runtime_error("Error in timeout classification. Executed cycles smaller than cycles");
     
+    if(b.exec_cycles.value() - b.cycles.value() <= 5) {
+        // Loop or Hang
+        if(a.retired.value() == b.retired.value()) 
+            result.verdict = Verdict::Hang;
+        else
+            result.verdict = Verdict::Loop;
+    }
+    else {
+        // Sleep
+        result.verdict = Verdict::Sleep;
+    }
+
+    return result;
 }

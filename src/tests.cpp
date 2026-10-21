@@ -43,12 +43,12 @@ int classify_test() {
 
     std::string base_path = "tests/logs/";
     std::vector<std::tuple<std::string, RunResult>> testcases = {
-        {"elf_error.txt", {Verdict::ElfError}},
+        {"elf_error.txt", {.verdict=Verdict::ElfError}},
         {"invalid.txt", {.verdict=Verdict::Unknown, .exec_cycles=87}},
-        {"loop.txt", {Verdict::Timeout, 495, 262, 500}},
-        {"match.txt", {Verdict::Match, 83, 42, 87}},
+        {"loop.txt", {.verdict=Verdict::Timeout, .cycles=495, .retired=262, .exec_cycles=500}},
+        {"match.txt", {.verdict=Verdict::Match, .cycles=83, .retired=42, .exec_cycles=87}},
         {"mismatch.txt", {.verdict=Verdict::Mismatch, .exec_cycles=44}},
-        {"sleep.txt", {Verdict::Timeout, 39, 33, 500}},
+        {"sleep.txt", {.verdict=Verdict::Timeout, .cycles=39, .retired=33, .exec_cycles=500}},
     };
 
     for (auto testcase : testcases) {

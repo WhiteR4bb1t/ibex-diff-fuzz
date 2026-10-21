@@ -11,6 +11,7 @@ struct RunResult {
     std::optional<uint64_t> cycles;
     std::optional<uint64_t> retired;
     std::optional<uint64_t> exec_cycles;
+    bool bad_timeout = false;
 };
 
 RunResult classify(const std::string& log);
