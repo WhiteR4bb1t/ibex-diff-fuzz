@@ -22,8 +22,8 @@ an open-source RISC-V core. It is a learning project, not a production-ready fuz
 
 ```
 docker build -t fuzz-env -f docker/Dockerfile docker/
-docker run --rm -it .:/work -v docker/bashrc:/tmp/.bashrc -w /work --user
-$(id -u):$(id -g) -e HOME=/tmp fuzz-env
+docker run --rm -it -v "$PWD":/work -v "$PWD/docker/bashrc":/tmp/.bashrc:ro \
+  -w /work --user "$(id -u):$(id -g)" -e HOME=/tmp fuzz-env
 make
 bin/fuzztests
 ```
@@ -61,13 +61,14 @@ The most important ones. All decisions with reasons: [docs/decisions.md](docs/de
 
 **Runner**
 
-- [One directory per testcase](docs/decisions.md#one-directory-per-testcase-one-environment-per-campaign) (2026-10-13):
+- [One directory per testcase](docs/decisions.md#one-directory-per-testcase) (2026-10-13):
   `.S` file and ELF are both kept, because the assembler decides the bytes.
 
 ## Gaps
 
 - `mtime` cannot be read ([No loads from device addresses](docs/decisions.md#no-loads-from-device-addresses-stores-allowed))
 - Bugs in waking the CPU stay hidden ([No wfi in the generator](docs/decisions.md#no-wfi-in-the-generator))
+- Ibex config `maxperf` was chosen without a specific reason; other configs are untested
 
 ## Triages
 

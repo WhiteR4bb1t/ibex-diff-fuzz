@@ -144,7 +144,7 @@ I want to improve my C++ skills, and running the simulator as an external proces
 is easier. In the long term I'd rather write my own harness that controls Ibex
 and Spike directly, to get more information than just the logs.
 
-### One directory per testcase; one environment per campaign
+### One directory per testcase
 
 *2026-10-13*
 
