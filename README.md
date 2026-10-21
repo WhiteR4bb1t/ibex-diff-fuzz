@@ -5,10 +5,17 @@ not a production-ready fuzzer, but rather a learning project.
 
 ## Status
 
+*Done:*
+
 - Classification of log files
 - Classification of timeouts
 
 - Tests for classify
+
+*Missing:*
+- Fuzz loop
+- Run function
+- Mutator
 
 ## Usage
 
@@ -24,7 +31,7 @@ bin/fuzztests
 ### Environment
 ### Oracle / Testcases
 ### Classifier
-- [Classify by stdout, not exit code](docs/classify-by-stdout-not-exit-code)
+- [Classify by stdout, not exit code](docs/decisions.md#classify-by-stdout-not-exit-code)
   (2026-10-13): match, timeout and unloadable ELF all exit 0.
 ### Runner
 
