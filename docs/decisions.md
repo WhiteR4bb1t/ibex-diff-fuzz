@@ -1,15 +1,12 @@
 # Decisions
-
-## Environment
-
+## Environment 
 ### Toolchain in Docker image
 
-*2026-10-01*
+*2026-10-01* 
 
-A Docker image makes it easy to install the fuzzer on new devices where the
-toolchain and its requirements aren't installed. It also gives every system
-exactly the same tools, so a `.S` file isn't assembled differently on one machine
-than on another.
+A Docker image makes it easy to install the fuzzer on new devices where the 
+toolchain and its requirements aren't installed. It also gives every system exactly 
+the same tools, so a `.S` file isn't assembled differently on one machine than on another. 
 
 ### Ibex as submodule on my own fork
 
@@ -109,8 +106,7 @@ error.
 
 *2026-10-13*
 
-The limit for a run can be calculated as instruction count × worst-case latency
-+ a constant. Every timeout should be a finding, because there is no reason for
+The limit for a run can be calculated as instruction count × worst-case latency + a constant. Every timeout should be a finding, because there is no reason for
 the program to loop.
 
 ### Unknown as separate category; the campaign continues

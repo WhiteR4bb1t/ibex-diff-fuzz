@@ -1,5 +1,6 @@
 build/
 run/
 bin/
+notes/
 
 .fenv_history
