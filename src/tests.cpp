@@ -4,7 +4,8 @@
 #include <vector>
 #include <tuple>
 
-#include "fuzzer.h"
+#include "classifier.h"
+#include "util.h"
 
 int classify_test();
 int timeout_classify_test();

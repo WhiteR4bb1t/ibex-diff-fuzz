@@ -16,5 +16,4 @@ struct RunResult {
 
 RunResult classify(const std::string& log);
 RunResult timeout_classify(const RunResult& a, const RunResult& b);
-void print_result(std::ostream& os, const RunResult& result);
-std::string verdict_to_string(Verdict v);
+
