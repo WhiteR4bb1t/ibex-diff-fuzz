@@ -1,5 +1,5 @@
 # Decisions
-## Environment 
+## Environment
 ### Toolchain in Docker image
 
 *2026-10-01* 
@@ -20,15 +20,15 @@ forked Ibex and added the fork as a submodule to get the fix onto every new devi
 
 ## Oracle / Testcases
 
-### No loads from device addresses, stores allowed
+### No loads from device addresses
 
 *2026-10-12*
 
 Spike has no devices connected, so device addresses are plain memory there. A
 load from a device address therefore mismatches whenever Ibex has a real device
-at that address. Stores are allowed: the stored value comes from the same
-register on both sides, so there is no reason for a mismatch. Stores are also
-required, because the simulation ends with a store to `0x20008`.
+at that address. Stores were allowed at first; since 2026-11-07 generated stores
+use the same range as loads → [Loads and stores only in the RAM buffer](#loads-and-stores-only-in-the-ram-buffer).
+The wrapper still ends the simulation with a store to `0x20008`.
 
 **Cost:** `mtime` cannot be read.
 
@@ -46,6 +46,16 @@ instructions (`wfi`), the `reset_handler` and the `.vectors` section.
 My testcases should not trap, so every unexpected trap stops the execution
 immediately.
 
+### Sleep loop after the exit
+
+*2026-11-08*
+
+After the exit store the core keeps running for a few cycles into zero-initialized
+memory, which caused an exception at the end of every program. A `wfi` loop after
+the exit fixes that. It breaks the [no-wfi rule](#no-wfi-in-the-generator), but only
+after the exit: if a run ends up sleeping there, the exit didn't work, which is
+still a finding.
+
 ### Control tests with known output
 
 *2026-10-12*
@@ -60,6 +70,82 @@ those functions around them.
 
 The timeout classification depends on `mcycle`; a manipulated value would lead
 to a wrong classification of timeout runs.
+
+## Generator
+
+### Own instruction generator instead of an external one
+
+*2026-11-06*
+
+This is a learning project, and the generator is one of the biggest parts of the
+fuzzer, if not the biggest, so I don't want to depend on external sources here.
+For now I also only want to generate instructions I fully control and really
+understand.
+
+### Uniform choice over all instructions, not over formats
+
+*2026-11-07*
+
+At first the generator picked a format and then an instruction from it. That
+caused a strong bias. The idea was to test every format equally, but the fuzzer
+tests how instructions work, not instruction formats, so a uniform distribution
+over all instructions is more efficient.
+
+### No ecall, ebreak or fence
+
+*2026-11-07*
+
+`ecall` and `ebreak` both raise an exception, which isn't checked for now. Since
+there is no exception handling, the program simply exits
+([All trap vectors jump to exit](#all-trap-vectors-jump-to-exit)). `fence` adds
+little: there are no devices except the timer, so it has no effect.
+
+### jalr only to labels
+
+*2026-11-07*
+
+To prevent loops, `jalr` jumps to labels like the other jumps: `lla` loads the
+address of the label, then `jalr` jumps with offset 0.
+→ [Only forward jumps](#only-forward-jumps)
+
+### All registers, never `x0` as base register
+
+*2026-11-07, updated 2026-11-08*
+
+No register can break the surrounding program, so all registers from `x0` to `x31`
+are used. Both Spike and Ibex start with every register set to 0.
+
+Loads and stores need a base register plus an offset. The generator picks a random
+address, writes the upper 20 bits into a register with `lui` and uses the lower 12
+bits as the offset, so it keeps full control over the address.
+
+Since 2026-11-08 the base register of `jalr`, loads and stores is never `x0`:
+`x0` can't hold the address, so the access or the jump doesn't go where it should.
+A load or store should hit valid memory. Found in
+[Jump to `0x00000000`](triages.md#jump-to-0x00000000).
+
+### Loads and stores only in the RAM buffer
+
+*2026-11-07*
+
+Loads and stores use `0x110000`–`0x1FFFF0`. This is where Ibex and Spike have the
+same memory: Spike's memory is zero almost everywhere except where the program is
+loaded, Ibex only has device-free memory from `0x100000`, and both have the program
+at `0x100080`, which must not be overwritten. Starting at `0x110000` leaves a
+generous buffer, so large programs still fit. A bigger range also has a downside:
+a store and a load to the same region become less likely.
+
+Stores use the same range as loads. A store to an address Ibex doesn't have leads
+to a trap and therefore an exit. A store to SimCtrl could end the
+simulation early, and stores to devices have no use. A shared range also makes
+loads and stores to the same address more likely.
+
+### Unaligned memory accesses allowed
+
+*2026-11-07*
+
+They lead to exactly the edge cases I want to look at, and my environment allows
+them.
 
 ## Classifier
 
@@ -97,10 +183,9 @@ run decides the cause of the timeout:
 
 *2026-10-13*
 
-Without `wfi` the CPU has no legitimate way to sleep, so every sleep is an RTL
-error.
-
-**Cost:** Bugs in waking the CPU stay hidden.
+Without `wfi` the CPU has no legitimate way to sleep before the exit, so every
+sleep before the exit is an RTL error. The only `wfi` is the
+[sleep loop after the exit](#sleep-loop-after-the-exit).
 
 ### Only forward jumps
 
@@ -145,5 +230,77 @@ and Spike directly, to get more information than just the logs.
 *2026-10-13*
 
 The assembler decides which bytes are generated from the `.S` file, so both the
-`.S` file and the ELF are saved. Uninteresting testcases get cleaned up by the
-fuzz loop.
+`.S` file and the ELF are saved. The output of gcc and of the simulator go into
+`.out` files: the classifier reads the simulator output, and the gcc output helps
+debugging instead of just ending in a crash. Matches are deleted right away, so
+after a campaign only the interesting IDs are left.
+
+### Testcase ID and directory come from the loop
+
+*2026-11-03*
+
+`run_one` doesn't create its ID, because it doesn't know at which position of the
+campaign it runs. The fuzz loop gives it the ID, which is also the name of the
+testcase directory, because it is unique. The loop creates the directory with the
+`.S` file inside; `run_one` gets the directory and the file name without a path.
+A fixed file name would have to be changed in `run_one` as well, and this way test
+`.S` files can be used without renaming them.
+
+### Run directory relative to the working directory, Ibex build relative to the binary
+
+*2026-11-03*
+
+The run directory is relative to the directory the fuzzer is started in, so it can
+be started from anywhere and different campaigns can live in different places. The
+Ibex build belongs to the fuzzer and has to be found no matter where the fuzzer is
+started; relative to the working directory would require a fixed working directory.
+
+## Loop
+
+### Errors: DUT, fuzzer, own code
+
+*2026-11-03, updated 2026-11-08*
+
+An error of the DUT is found through a mismatch. An error of the fuzzer at runtime
+is an exception. An error in my own code, like calling a function wrongly, is an
+`assert`.
+
+There are two exception classes: `FatalError` breaks the whole campaign, `RunError`
+only the current run. Almost all errors are `RunError`s: the run is skipped and its
+directory is kept for review, so a small error doesn't crash the whole campaign.
+
+## Tests
+
+### One test function per function
+
+*2026-10-22*
+
+One test function for all functions would give every function added to it a chance
+to bring a bug into the test. With one test per function, a test stays as it is, is
+not influenced by other tests and always checks its function in exactly the same way.
+
+### timeout_classify is tested with synthetic results
+
+*2026-10-23*
+
+The function takes results, not logs, and synthetic results cover many more edge
+cases. Most important: going through `classify` would break
+[one test function per function](#one-test-function-per-function), because a bug in
+`classify` would show up as a bug in `timeout_classify`.
+
+### timeout_classify tests only the oracle
+
+*2026-11-03*
+
+Tested:
+
+- The second run is not a timeout: `Unknown` or `ElfError` throw an exception,
+  anything else (e.g. `Match`) is a bad timeout.
+- `exec_cycles < cycles` throws an exception. I removed the `assert` for it, because
+  this might become an error of the DUT later.
+
+Not tested:
+
+- The first run is not a timeout: that is an error of the caller.
+- Missing statistics: that is an error of the runtime before, and it is checked.
+  It has nothing to do with the oracle.

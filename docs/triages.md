@@ -36,7 +36,7 @@ Running the upstream `hello_test` under co-simulation (config `maxperf`):
 ### Consequence
 
 Every value that only the hardware knows (MMIO such as `mtime`) produces a false mismatch until
-the harness handles it. → [No loads from device addresses](decisions.md#no-loads-from-device-addresses-stores-allowed)
+the harness handles it. → [No loads from device addresses](decisions.md#no-loads-from-device-addresses)
 
 ## Jump to `0x00000000`
 
@@ -68,3 +68,4 @@ Running the fuzzer produces several mismatches per run:
 
 `x0` can't hold a value, so every register except `x0` is allowed as the base register for jumps
 to a label loaded with `lla`.
+→ [All registers, never `x0` as base register](decisions.md#all-registers-never-x0-as-base-register)

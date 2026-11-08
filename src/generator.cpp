@@ -117,7 +117,7 @@ int Generator::generate(std::string file, int id) {
                     instr_count += 3;
                 } else if(instr == LB || instr == LH || instr == LW || instr == LBU || instr == LHU) {
                     // Load instruction
-                    std::uniform_int_distribution<uint32_t> address_distrib(0x110000, 0x1FFFFF0);
+                    std::uniform_int_distribution<uint32_t> address_distrib(0x110000, 0x1FFFF0);
                     uint32_t address = address_distrib(gen_);
                     int imm_int = address >> 12;
                     int offset_int = address & 0xFFF;
@@ -171,7 +171,7 @@ int Generator::generate(std::string file, int id) {
             }
             case InstrFormat::S: {
                 // Stores
-                std::uniform_int_distribution<uint32_t> address_distrib(0x110000, 0x1FFFFF0);
+                std::uniform_int_distribution<uint32_t> address_distrib(0x110000, 0x1FFFF0);
                 uint32_t address = address_distrib(gen_);
                 int imm_int = address >> 12;
                 int offset_int = address & 0xFFF;
