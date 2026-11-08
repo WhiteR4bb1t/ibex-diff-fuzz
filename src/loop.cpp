@@ -43,10 +43,6 @@ int loop(int argc, char *argv[]) {
         generator = new Generator(run_dir);
         runner = new Runner(run_dir, 10000, 20000);
     }
-    catch (const RunError& e) {
-        std::cerr << "\033[31m" << e.where().function_name() << ": " << e.what() << "\033[0m\n";
-        error_count++;
-    }
     catch (const FatalError& e) {
         std::cerr << e.where().function_name() << ": " << e.what() << "\n";
         return 1;
@@ -58,7 +54,7 @@ int loop(int argc, char *argv[]) {
     std::array<int, VERDICT_COUNT> verdict_counter = {0};
 
     // Fuzz loop
-    for(int i = 0; i <= run_length; i++) {
+    for(int i = 1; i <= run_length; i++) {
         RunResult result;
 
         id_str = std::to_string(i);
@@ -72,6 +68,11 @@ int loop(int argc, char *argv[]) {
         try {
             actual_instruction_count = generator->generate(prog_name, i);
             result = runner->run_one(prog_name, i);
+        }
+        catch (const RunError& e) {
+            std::cerr << "\033[31m(ID " << i << ") " << e.where().function_name() << ": " << e.what() << "\033[0m\n";
+            error_count++;
+            continue;
         }
         catch (const FatalError& e) {
             std::cerr << "(ID " << i << ") " << e.where().function_name() << ": " << e.what() << "\n";

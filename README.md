@@ -35,12 +35,16 @@ fusesoc --cores-root=third_party/ibex run --target=sim --setup --build \
   lowrisc:ibex:ibex_simple_system_cosim \
   $(third_party/ibex/util/ibex_config.py --config_filename third_party/ibex/ibex_configs.yaml maxperf fusesoc_opts)
 make all
-bin/fuzztest   # tests for the oracle
+bin/fuzztest all   # tests for the oracle
 bin/fuzz       # campaign of 1000 testcases
 ```
 
 `bin/fuzz` writes one directory per testcase into `run/` (relative to the working
 directory). Matches are deleted, so every directory left in `run/` is a finding or an error.
+
+Start every campaign in a new directory: a second campaign in the same directory starts
+again at ID 1 and overwrites or deletes the findings of the first one. Continuing a campaign
+is not supported yet.
 
 ## Decisions
 
@@ -99,6 +103,8 @@ The most important ones. All decisions with reasons: [docs/decisions.md](docs/de
 - `mtime` cannot be read ([No loads from device addresses](docs/decisions.md#no-loads-from-device-addresses))
 - Bugs in waking the CPU stay hidden ([No wfi in the generator](docs/decisions.md#no-wfi-in-the-generator))
 - Ibex config `maxperf` was chosen without a specific reason; other configs are untested
+- Errors can't be told apart yet: if a tool is missing (e.g. `riscv32-unknown-elf-gcc` not in
+  `PATH`), the campaign only shows many errors without the cause
 
 ## Triages
 
