@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#define VERDICT_COUNT 8
 enum class Verdict { Match, Mismatch, Timeout, Unknown, Loop, Hang, Sleep, ElfError };
 
 struct RunResult {

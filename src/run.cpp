@@ -3,7 +3,6 @@
 #include <sstream>
 #include <fstream>
 #include <cassert>
-#include <stdexcept>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -11,6 +10,7 @@
 
 #include "run.h"
 #include "classifier.h"
+#include "error.h"
 
 namespace fs = std::filesystem;
 
@@ -19,9 +19,9 @@ Runner::Runner(std::string folder, int LIMIT_1 = 1000, int LIMIT_2 = 2000) : fol
     ibex_simple_system_ = proj_dir_ / "build" / "lowrisc_ibex_ibex_simple_system_cosim_0" / "sim-verilator" / "Vibex_simple_system";
     link_ = proj_dir_ / "third_party" / "ibex" / "examples" / "sw" / "simple_system" / "common" / "link.ld";
 
-    if (!fs::exists(proj_dir_) || !fs::is_directory(proj_dir_)) throw std::runtime_error("The folder " + proj_dir_.string() + " does not exist");
-    if (!fs::exists(ibex_simple_system_)) throw std::runtime_error("Ibex could not be found in " + ibex_simple_system_.string());
-    if (!fs::exists(link_)) throw std::runtime_error("The link file " + link_.string() + " does not exist");
+    if (!fs::exists(proj_dir_) || !fs::is_directory(proj_dir_)) throw FatalError("The folder " + proj_dir_.string() + " does not exist");
+    if (!fs::exists(ibex_simple_system_)) throw FatalError("Ibex could not be found in " + ibex_simple_system_.string());
+    if (!fs::exists(link_)) throw FatalError("The link file " + link_.string() + " does not exist");
 }
 
 RunResult Runner::run_one(std::string file, int id) {
@@ -31,7 +31,7 @@ RunResult Runner::run_one(std::string file, int id) {
     std::string id_str = std::to_string(id);
     fs::path run_dir = fs::path(folder_) / id_str;
 
-    if (!fs::exists(run_dir) || !fs::is_directory(run_dir)) throw std::runtime_error("The folder " + run_dir.string() + " does not exist");
+    if (!fs::exists(run_dir) || !fs::is_directory(run_dir)) throw RunError("The folder " + run_dir.string() + " does not exist");
 
     // Assemble .elf
     run_gcc(run_dir, file); 
@@ -39,7 +39,7 @@ RunResult Runner::run_one(std::string file, int id) {
     run_ibex(run_dir, file, LIMIT_1_, ibex_out_1_);
     
     std::ifstream f(run_dir / ibex_out_1_);
-    if (!f) throw std::runtime_error("Failed to open file (" + ibex_out_1_ + ")");
+    if (!f) throw RunError("Failed to open file (" + ibex_out_1_ + ")");
     std::stringstream ss;
     ss << f.rdbuf();
     std::string log = ss.str();
@@ -50,7 +50,7 @@ RunResult Runner::run_one(std::string file, int id) {
         run_ibex(run_dir, file, LIMIT_2_, ibex_out_2_);
 
         std::ifstream f(run_dir / ibex_out_2_);
-        if (!f) throw std::runtime_error("Failed to open file (" + ibex_out_2_ + ")");
+        if (!f) throw RunError("Failed to open file (" + ibex_out_2_ + ")");
         std::stringstream ss;
         ss << f.rdbuf();
         std::string log = ss.str();
@@ -73,7 +73,7 @@ void Runner::run_gcc(fs::path dir, std::string file) {
     // -T third_party/ibex/examples/sw/simple_system/common/link.ld -o run/sleep.elf tests/control_sleep.S 
     pid_t pid = fork();
     if (pid < 0) {
-        throw std::runtime_error("Error in forking for riscv32-unknown-elf-gcc");
+        throw RunError("Error in forking for riscv32-unknown-elf-gcc");
     }
     if (pid == 0) { // child process
         fs::path log_file = dir / "riscv32-unknown-elf-gcc.out";
@@ -99,7 +99,7 @@ void Runner::run_gcc(fs::path dir, std::string file) {
     } else {
         int status;
         waitpid(pid, &status, 0);
-        if(!WIFEXITED(status)) throw std::runtime_error("Error in execution of riscv32-unknown-elf-gcc");
+        if(!WIFEXITED(status)) throw RunError("Error in execution of riscv32-unknown-elf-gcc");
     }
 
 }
@@ -111,7 +111,7 @@ void Runner::run_ibex(fs::path dir, std::string file, int limit, std::string out
     // Fork
     pid_t pid = fork();
     if (pid < 0) {
-        throw std::runtime_error("Error in forking for Vibex_simple_system");
+        throw RunError("Error in forking for Vibex_simple_system");
     }
     if (pid == 0) { // child process
         chdir(dir.c_str());
@@ -135,6 +135,6 @@ void Runner::run_ibex(fs::path dir, std::string file, int limit, std::string out
     } else {
         int status;
         waitpid(pid, &status, 0);
-        if(!WIFEXITED(status)) throw std::runtime_error("Error in execution of Vibex_simple_system");
+        if(!WIFEXITED(status)) throw RunError("Error in execution of Vibex_simple_system");
     }
 }
