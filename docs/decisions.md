@@ -135,10 +135,10 @@ at `0x100080`, which must not be overwritten. Starting at `0x110000` leaves a
 generous buffer, so large programs still fit. A bigger range also has a downside:
 a store and a load to the same region become less likely.
 
-Stores use the same range as loads. A store to an address Ibex doesn't have leads
-to a trap and therefore an exit. A store to SimCtrl could end the
-simulation early, and stores to devices have no use. A shared range also makes
-loads and stores to the same address more likely.
+Stores use the same range as loads. A store to an address Ibex doesn't have
+traps, so the program exits early. A store to SimCtrl could end the simulation
+early as well, and stores to devices have no use. A shared range also makes loads
+and stores to the same address more likely.
 
 ### Unaligned memory accesses allowed
 
