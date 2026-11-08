@@ -73,7 +73,7 @@ int Generator::generate(std::string file, int id) {
     prog.append(wrapper_start_);
 
     // Build asm file
-    std::string rs1, rs2, rd, imm, offset, label;
+    std::string rs1, rs2, rd, rd_without_x0, imm, offset, label;
     int instr_count = 0;
 
     std::vector<int> labels;
@@ -97,6 +97,8 @@ int Generator::generate(std::string file, int id) {
         rs1 = "x" + std::to_string(register_distrib_(gen_));
         rs2 = "x" + std::to_string(register_distrib_(gen_));
         rd = "x" + std::to_string(register_distrib_(gen_));
+        std::uniform_int_distribution<int> register_without_x0_distrib(1, 31);
+        rd_without_x0 = "x" + std::to_string(register_without_x0_distrib(gen_));
 
         switch(format) {
             case InstrFormat::B: {
@@ -110,8 +112,8 @@ int Generator::generate(std::string file, int id) {
                 if(instr == JALR) {
                     // Create label and jump to it with jalr
                     label = std::to_string(getLabel(i, len, labels));
-                    prog.append("lla " + rs1 + ", " + label + "f\n");
-                    prog.append("jalr " + rd + ", 0(" + rs1 + ")\n");
+                    prog.append("lla " + rd_without_x0 + ", " + label + "f\n");
+                    prog.append("jalr " + rd + ", 0(" + rd_without_x0 + ")\n");
                     instr_count += 3;
                 } else if(instr == LB || instr == LH || instr == LW || instr == LBU || instr == LHU) {
                     // Load instruction
@@ -126,8 +128,8 @@ int Generator::generate(std::string file, int id) {
                     imm = std::to_string(imm_int);
                     offset = std::to_string(offset_int);
 
-                    prog.append("lui " + rs1 + ", " + imm + "\n");
-                    prog.append(instrToString(instr) + " " + rd + ", " + offset + "(" + rs1 + ")\n");
+                    prog.append("lui " + rd_without_x0 + ", " + imm + "\n");
+                    prog.append(instrToString(instr) + " " + rd + ", " + offset + "(" + rd_without_x0 + ")\n");
                      
                     instr_count += 2;
                 } else if (instr == SLLI || instr == SRLI || instr == SRAI) {
@@ -179,8 +181,8 @@ int Generator::generate(std::string file, int id) {
                 }
                 imm = std::to_string(imm_int);
                 offset = std::to_string(offset_int);
-                prog.append("lui " + rs1 + ", " + imm + "\n");
-                prog.append(instrToString(instr) + " " + rs2 + ", " + offset + "(" + rs1 + ")\n");
+                prog.append("lui " + rd_without_x0 + ", " + imm + "\n");
+                prog.append(instrToString(instr) + " " + rs2 + ", " + offset + "(" + rd_without_x0 + ")\n");
                  
                 instr_count += 2;
                 break;

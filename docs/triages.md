@@ -32,9 +32,39 @@ Running the upstream `hello_test` under co-simulation (config `maxperf`):
   `mtvec` (`0x100000`), while the DUT keeps running (line 2, same step).
 - The load before it (`0x30004`, `mtimeh`) only matched by coincidence: the counter was still
   below 2³², and Spike's memory is 0.
-- Upstream CI does not run `hello_test` under co-simulation, so this never shows up there.
 
 ### Consequence
 
 Every value that only the hardware knows (MMIO such as `mtime`) produces a false mismatch until
 the harness handles it. → [No loads from device addresses](decisions.md#no-loads-from-device-addresses-stores-allowed)
+
+## Jump to `0x00000000`
+
+*2026-11-08* · **Verdict:** fuzzer generator, not an RTL or Spike bug
+
+### Symptom
+
+Running the fuzzer produces several mismatches per run:
+
+- Spike expects a synchronous trap (ISS PC `0x100000`), the DUT reports none (PC `0x00000000`)
+
+### Hypotheses
+
+1. Problem with the generator
+
+### Root cause
+
+- `jalr x8, 0(x0)` at `0x1000e0` jumps to `0x00000000`. This is caused by a convention in the
+  generator: a JALR first loads the address of a label into a random register and then uses that
+  register as its base. The problem is that the random register can also be `x0`.
+- Spike has `0x00000000` at `0x00000000`, which is an illegal instruction, so it raises
+  `trap_illegal_instruction`.
+- The DUT fetches instructions via the RAM's b port, which only uses bits `[19:2]` and then
+  addresses the RAM with them. So `0x100000` and `0x000000` both become `0` and address the first
+  instruction in memory. The first instruction in memory at `0x100000` is `jal x0, 84`, which is
+  a valid instruction and doesn't trap.
+
+### Consequence
+
+`x0` can't hold a value, so every register except `x0` is allowed as the base register for jumps
+to a label loaded with `lla`.
